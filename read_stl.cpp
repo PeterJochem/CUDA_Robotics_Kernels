@@ -4,13 +4,13 @@
 #include <string>
 #include <stdexcept>
 #include <cmath>
+#include <cassert>
 
 struct STLTriangle {
     float normal[3];
     float v1[3];
     float v2[3];
     float v3[3];
-    short attributeByteCount;
 };
 
 bool equal(float a, float b, float epsilon = 1e-8) {
@@ -290,7 +290,7 @@ class Mesh {
         void load_from_file(std::string);
         void print_triangles(void);
         Triangle* triangles;
-        STLTriangle* stl_triangles;
+        //STLTriangle* stl_triangles;
         //Transformation
         int num_triangles;
         std::string file_name;
@@ -301,61 +301,72 @@ Mesh::Mesh(): triangles(nullptr), file_name(""), num_triangles(0) {
 
 void Mesh::print_triangles(void) {
 
+    if (!triangles) {
+        std::cout << "There are no triangles in this mesh!" << std::endl;
+        return;
+    }
+
     std::cout << "Number of triangles: " << num_triangles << std::endl;
     for (int i = 0; i < num_triangles; i++) {
-        std::cout << "Normal: " << stl_triangles[i].normal[0] << " " << stl_triangles[i].normal[1] << " " << stl_triangles[i].normal[2] << std::endl;
-        std::cout << "Vertex 1: " << stl_triangles[i].v1[0] << " " << stl_triangles[i].v1[1] << " " << stl_triangles[i].v1[2] << std::endl;
-        std::cout << "Vertex 2: " << stl_triangles[i].v2[0] << " " << stl_triangles[i].v2[1] << " " << stl_triangles[i].v2[2] << std::endl;
-        std::cout << "Vertex 3: " << stl_triangles[i].v3[0] << " " << stl_triangles[i].v3[1] << " " << stl_triangles[i].v3[2] << std::endl;
+        auto& triangle = triangles[i];
+        std::cout << "Vertex 1: " << triangle.vertex1.x << " " << triangle.vertex1.y << " " << triangle.vertex1.z << std::endl;
+        std::cout << "Vertex 2: " << triangle.vertex2.x << " " << triangle.vertex2.y << " " << triangle.vertex2.z << std::endl;
+        std::cout << "Vertex 3: " << triangle.vertex3.x << " " << triangle.vertex3.y << " " << triangle.vertex3.z << std::endl;
     }
+}
+
+std::vector<STLTriangle> parseBinarySTL(const std::string& filename) {
+
+    std::vector<STLTriangle> triangles;
+    std::ifstream file(filename, std::ios::binary);
+
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return triangles;
+    }
+
+    // Read 80-byte header (ignore)
+    file.seekg(80, std::ios::beg);
+
+    // Read number of triangles (4-byte unsigned int)
+    uint32_t numTriangles;
+    file.read(reinterpret_cast<char*>(&numTriangles), sizeof(numTriangles));
+
+    // Read each triangle
+    for (uint32_t i = 0; i < numTriangles; ++i) {
+        STLTriangle triangle;
+        // Read normal vector (3 floats, 12 bytes)
+        file.read(reinterpret_cast<char*>(&triangle.normal), sizeof(triangle.normal));
+        // Read vertices (3 * 3 floats, 36 bytes)
+        file.read(reinterpret_cast<char*>(&triangle.v1), sizeof(triangle.v1));
+        file.read(reinterpret_cast<char*>(&triangle.v2), sizeof(triangle.v2));
+        file.read(reinterpret_cast<char*>(&triangle.v3), sizeof(triangle.v3));
+        // Read attribute count (2-byte unsigned int, ignored)
+        file.seekg(2, std::ios::cur);
+        triangles.push_back(triangle);
+}
+
+    return triangles;
 }
 
 void Mesh::load_from_file(std::string file_name) {
 
-    std::ifstream file(file_name, std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file.");
+    std::vector<STLTriangle> read_triangles = parseBinarySTL(file_name);
+    this->num_triangles = read_triangles.size();
+    triangles = (Triangle*) malloc(sizeof(Triangle) * num_triangles);
+    for (int i = 0; i < read_triangles.size(); i++) {
+        auto a = Vector3(read_triangles[i].v1[0], read_triangles[i].v1[1], read_triangles[i].v1[2]);
+        auto b = Vector3(read_triangles[i].v2[0], read_triangles[i].v2[1], read_triangles[i].v2[2]);
+        auto c = Vector3(read_triangles[i].v3[0], read_triangles[i].v3[1], read_triangles[i].v3[2]);
+        triangles[i] = Triangle(a, b, c);
     }
-
-    // Skip the header (80 bytes) in the binary STL file
-    file.seekg(80, std::ios::beg);
-
-    // Read the number of triangles
-    uint32_t num_triangles;
-    file.read(reinterpret_cast<char*>(&num_triangles), sizeof(uint32_t));
-
-    // Allocate space for the triangles.
-    stl_triangles = (STLTriangle*) malloc(sizeof(STLTriangle) * num_triangles);
-
-    // Read each triangle
-    for (int i = 0; i < num_triangles; ++i) {
-        file.read(reinterpret_cast<char*>(&stl_triangles[i]), sizeof(STLTriangle));
-    }
-
-    this->num_triangles = num_triangles;
-
-    // Close the file
-    file.close();
 }
 
 int main() {
     
     Mesh mesh = Mesh();
-    mesh.load_from_file("./forearm.stl");
-    // mesh.print_triangles();
-
-    // Vertices of triangle 1.
-    auto t1_v1 = mesh.stl_triangles[0].v1;
-    auto t1_v2 = mesh.stl_triangles[0].v2;
-    auto t1_v3 = mesh.stl_triangles[0].v3;
-
-    // Vertices of triangle 2.
-    auto t2_v1 = mesh.stl_triangles[1].v1;
-    auto t2_v2 = mesh.stl_triangles[1].v2;
-    auto t2_v3 = mesh.stl_triangles[1].v3;
-
-    std::cout << "[" << t1_v1[0] << ", " << t1_v1[1] << ", " << t1_v1[2] << "]" << std::endl;
+    mesh.load_from_file("../meshes/forearm.stl");
+    //mesh.print_triangles();
 
     Triangle T1 = Triangle(Vector3(12., 24., 36.), Vector3(45., 54., 62.), Vector3(71., 89., 99.));
     Triangle T2 = Triangle(Vector3(-13., -24., -35.), Vector3(-46., -57., -68.), Vector3(-68., -69., -70.));
@@ -363,16 +374,18 @@ int main() {
     Triangle T3 = Triangle(Vector3(1., 0., 0.), Vector3(-1., 0., 0.), Vector3(0., 0., 1.));
     Triangle T4 = Triangle(Vector3(0., 3., 0.), Vector3(0., -3., 0.), Vector3(0., 0., 0.5));
 
+    Triangle T5 = Triangle(Vector3(1., 0., 0.), Vector3(-1., 0., 0.), Vector3(0., 0., 1.));
+    Triangle T6 = Triangle(Vector3(10., 3., 0.), Vector3(10., -3., 0.), Vector3(10., 0., 0.5));
 
-    TriangleTriangleCollisionDetector info1 = TriangleTriangleCollisionDetector(T1, T2);
-    std::cout << info1.d1 << std::endl;
-    auto result = info1.check();
-    std::cout << "Collision: " << result << std::endl;
+    TriangleTriangleCollisionDetector pair1 = TriangleTriangleCollisionDetector(T1, T2);
+    assert(pair1.check() == 0);
 
-    TriangleTriangleCollisionDetector info2 = TriangleTriangleCollisionDetector(T3, T4);
-    std::cout << info2.d1 << std::endl;
-    result = info2.check();
-    std::cout << "Collision: " << result << std::endl;
+    TriangleTriangleCollisionDetector pair2 = TriangleTriangleCollisionDetector(T3, T4);
+    assert(pair2.check() != 0);
 
+    TriangleTriangleCollisionDetector pair3 = TriangleTriangleCollisionDetector(T5, T6);
+    assert(pair3.check() == 0);
+
+    
     return 0;
 }
