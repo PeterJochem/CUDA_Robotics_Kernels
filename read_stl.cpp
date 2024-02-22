@@ -160,25 +160,6 @@ bool TriangleTriangleCollisionDetector::do_intervals_intersect(float a, float b,
 
 float line_segment_intersects_plane(CPUVector3 P, CPUVector3 Q, CPUVector3 N, float D) {
 
-    // P = (2, 1, 3)
-    /*
-    P.x = 2.0;
-    P.y = 1.0;
-    P.z = 3.0;
-
-    // Q = (5, 2, 1)
-    Q.x = 5.0;
-    Q.y = 2.0;
-    Q.z = 1.0;
-
-    // N = (1, -3, -5)
-    N.x = 1.0;
-    N.y = -3.0;
-    N.z = -5.0;
-
-    D = 4.0;
-    */
-
    float numerator = -D + (N.x * P.x) + (N.y * P.y) + (N.z * P.z);
    float denominator = (N.x * (P.x - Q.x)) + (N.y * (P.y - Q.y)) + (N.z * (P.z - Q.z));
    return numerator / denominator;
@@ -188,11 +169,10 @@ bool TriangleTriangleCollisionDetector::check(void) {
 
     if (all_zero(t1_d_v1, t1_d_v2, t1_d_v3) || all_zero(t2_d_v1, t2_d_v2, t2_d_v3)) {
         // The triangles are co-planar. Need to add this check.
-        //std::cout << "The triangles are coplanar." << std::endl;
         return false;
     }
     else if (all_non_zero_same_sign(t1_d_v1, t1_d_v2, t1_d_v3) || all_non_zero_same_sign(t2_d_v1, t2_d_v2, t2_d_v3)) {
-        //std::cout << "Collision rules out by all the signed distances having the same signs." << std::endl;
+        // Collision rules out by all the signed distances having the same signs.
         return false;
     }
 
@@ -313,13 +293,30 @@ class Mesh {
         void load_from_file(std::string);
         void print_triangles(void);
         Triangle* triangles;
-        //STLTriangle* stl_triangles;
-        //Transformation
         int num_triangles;
         std::string file_name;
+        bool collision_check(const Mesh&);
 };
 
 Mesh::Mesh(): triangles(nullptr), file_name(""), num_triangles(0) {
+}
+
+bool Mesh::collision_check(const Mesh& other_mesh) {
+
+    int num_collisions = 0;
+    for (int i = 0; i < num_triangles; i++) {
+        auto mesh_1_triangle = triangles[i];
+
+        for (int j = 0; j < other_mesh.num_triangles; j++) {
+            auto mesh_2_triangle = other_mesh.triangles[j];
+            TriangleTriangleCollisionDetector detector = TriangleTriangleCollisionDetector(mesh_1_triangle, mesh_2_triangle);
+            if (detector.check()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void Mesh::print_triangles(void) {
@@ -399,35 +396,6 @@ void test_one() {
     assert(pair2.check() != 0);
 }
 
-int check_meshes_for_collision(const Mesh& mesh1, const Mesh& mesh2) {
-
-    int num_collisions = 0;
-    for (int i = 0; i < mesh1.num_triangles; i++) {
-        auto mesh_1_triangle = mesh1.triangles[i];
-
-        for (int j = 0; j < mesh2.num_triangles; j++) {
-            auto mesh_2_triangle = mesh2.triangles[j];
-            mesh_2_triangle.vertex1.x += 10000;
-            mesh_2_triangle.vertex1.y += 10000;
-            mesh_2_triangle.vertex1.z += 10000;
-
-            mesh_2_triangle.vertex2.x += 20000;
-            mesh_2_triangle.vertex2.y += 20000;
-            mesh_2_triangle.vertex2.z += 20000;
-
-            mesh_2_triangle.vertex3.x += 30000;
-            mesh_2_triangle.vertex3.y += 30000;
-            mesh_2_triangle.vertex3.z += 30000;
-            TriangleTriangleCollisionDetector detector = TriangleTriangleCollisionDetector(mesh_1_triangle, mesh_2_triangle);
-            if (detector.check()) {
-                num_collisions += 1;
-            }
-        }
-    }
-
-    return num_collisions;
-}
-
 void mesh_test() {
 
     Mesh fore_arm = Mesh();
@@ -436,15 +404,13 @@ void mesh_test() {
     Mesh upper_arm = Mesh();
     upper_arm.load_from_file("../meshes/upperarm.stl");
 
-    int num_collisions = check_meshes_for_collision(fore_arm, upper_arm);
-
-    std::cout << "The number of collisions: " << num_collisions << std::endl;
+    bool collision = fore_arm.collision_check(upper_arm);
+    std::cout << "Collision: " << collision << std::endl;
 }
 
 
 int main() {
 
     mesh_test();
-
     return 0;
 }
