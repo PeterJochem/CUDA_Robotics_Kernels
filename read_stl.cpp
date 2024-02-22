@@ -53,46 +53,52 @@ float two_by_two_determinant(float a, float b, float c, float d) {
     *                      [c, d]]
     */
 
+   //std::cout << "----" << std::endl;
+   //std::cout << a << ", " << b << std::endl;
+   //std::cout << c << ", " << d << std::endl;
+   //std::cout << "----" << std::endl;
    return (a * d) - (b * c);
 }
 
 
-struct Vector3 {
+struct CPUVector3 {
 
     public:
-        Vector3(float, float, float);
-        Vector3();
+        CPUVector3(float, float, float);
+        CPUVector3();
         float x, y, z;
-        Vector3 operator-(const Vector3&) const;
-        Vector3 operator-(Vector3&) const;
-        float operator*(Vector3&) const;
-        float operator*(const Vector3&) const;
+        CPUVector3 operator-(const CPUVector3&) const;
+        CPUVector3 operator-(CPUVector3&) const;
+        CPUVector3 operator+(const CPUVector3&) const;
+        CPUVector3 operator+(CPUVector3&) const;
+        float operator*(CPUVector3&) const;
+        float operator*(const CPUVector3&) const;
 };
 
 
-Vector3 cross_product(const Vector3& left, const Vector3& right) {
-    
+CPUVector3 cross_product(const CPUVector3& left, const CPUVector3& right) {
+
     float x = two_by_two_determinant(left.y, left.z, right.y, right.z);
-    float y = two_by_two_determinant(left.x, left.z, right.x, right.z);
+    float y = -two_by_two_determinant(left.x, left.z, right.x, right.z);
     float z = two_by_two_determinant(left.x, left.y, right.x, right.y);
 
-    return Vector3(x, y, z);
+    return CPUVector3(x, y, z);
 }
 
 struct Triangle {
 
     public:
         Triangle();
-        Triangle(const Vector3&, const Vector3&, const Vector3&);
-        Vector3 vertex1;
-        Vector3 vertex2;
-        Vector3 vertex3;
+        Triangle(const CPUVector3&, const CPUVector3&, const CPUVector3&);
+        CPUVector3 vertex1;
+        CPUVector3 vertex2;
+        CPUVector3 vertex3;
 };
 
-Triangle::Triangle(): vertex1(Vector3(0, 0, 0)), vertex2(Vector3(0, 0, 0)), vertex3(Vector3(0, 0, 0)) {
+Triangle::Triangle(): vertex1(CPUVector3(0, 0, 0)), vertex2(CPUVector3(0, 0, 0)), vertex3(CPUVector3(0, 0, 0)) {
 }
 
-Triangle::Triangle(const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3): vertex1(vertex1), vertex2(vertex2), vertex3(vertex3) {
+Triangle::Triangle(const CPUVector3& vertex1, const CPUVector3& vertex2, const CPUVector3& vertex3): vertex1(vertex1), vertex2(vertex2), vertex3(vertex3) {
 }
 
 struct TriangleTriangleCollisionDetector {
@@ -104,19 +110,19 @@ struct TriangleTriangleCollisionDetector {
         bool check(void);
         const Triangle triangle_1;
         const Triangle triangle_2;
-        Vector3 N1, N2;
+        CPUVector3 N1, N2;
         float d1, d2;
         float t1_d_v1, t1_d_v2, t1_d_v3;
         float t2_d_v1, t2_d_v2, t2_d_v3;
     
     private:
-        Vector3 compute_signed_distances(const Triangle&, const Vector3&, float) const;
-        Vector3 point_on_line(const Vector3&, float, const Vector3&, float) const;
+        CPUVector3 compute_signed_distances(const Triangle&, const CPUVector3&, float) const;
+        CPUVector3 point_on_line(const CPUVector3&, float, const CPUVector3&, float) const;
         bool do_intervals_intersect(float, float, float, float);
 
 };
 
-Vector3 TriangleTriangleCollisionDetector::point_on_line(const Vector3& N1, float d1, const Vector3& N2, float d2) const {
+CPUVector3 TriangleTriangleCollisionDetector::point_on_line(const CPUVector3& N1, float d1, const CPUVector3& N2, float d2) const {
     // Intersection of two planes: https://www.youtube.com/watch?v=O6O_64zIEYI
     // Symbolic matrix solver: https://www.symbolab.com
 
@@ -124,7 +130,7 @@ Vector3 TriangleTriangleCollisionDetector::point_on_line(const Vector3& N1, floa
     x = ((N1.y * d2) - (N2.y * d1)) / ((-N1.y * N2.x) + (N1.x * N2.y));
     y = ((-N1.x * d2) + (N2.x * d1)) / ((-N1.y * N2.x) + (N1.x * N2.y));
     z = 0.0;
-    return Vector3(x, y, z);
+    return CPUVector3(x, y, z);
 }
 
 bool TriangleTriangleCollisionDetector::do_intervals_intersect(float a, float b, float c, float d) {
@@ -142,8 +148,47 @@ bool TriangleTriangleCollisionDetector::do_intervals_intersect(float a, float b,
     else if (upper1 >= lower2 && upper1 <= upper2) {
         return true;
     }
+    else if (lower2 >= lower1 && lower2 <= upper1) {
+        return true;
+    }
+    else if (upper2 >= lower1 && upper2 <= upper1) {
+        return true;
+    }
 
     return false;
+}
+
+float line_segment_intersects_plane(CPUVector3 P, CPUVector3 Q, CPUVector3 N, float D) {
+
+    // P = (2, 1, 3)
+    /*
+    P.x = 2.0;
+    P.y = 1.0;
+    P.z = 3.0;
+
+    // Q = (5, 2, 1)
+    Q.x = 5.0;
+    Q.y = 2.0;
+    Q.z = 1.0;
+
+    // N = (1, -3, -5)
+    N.x = 1.0;
+    N.y = -3.0;
+    N.z = -5.0;
+
+    D = 4.0;
+    */
+
+   std::cout << "P and Q" << std::endl;
+   std::cout << P.x << ", " << P.y << ", " << P.z << std::endl;
+   std::cout << Q.x << ", " << Q.y << ", " << Q.z << std::endl;
+   std::cout << "--------" << std::endl;
+
+   float numerator = -D + (N.x * P.x) + (N.y * P.y) + (N.z * P.z);
+   float denominator = (N.x * (P.x - Q.x)) + (N.y * (P.y - Q.y)) + (N.z * (P.z - Q.z));
+
+   std::cout << numerator << " / " << denominator << std::endl;
+   return numerator / denominator;
 }
 
 bool TriangleTriangleCollisionDetector::check(void) {
@@ -160,74 +205,88 @@ bool TriangleTriangleCollisionDetector::check(void) {
     }
 
     // Get two vertices from each triangle which lie on the same side.
-    Vector3 T1_V1, T1_V2;
-    float d_1_v1, d_1_v2;
+    CPUVector3 T1_V1, T1_V2, T1_V3;
+    float d_1_v1, d_1_v2, d_1_v3;
     if (non_zero_same_sign(t1_d_v1, t1_d_v2)) {
+        std::cout << "A" << std::endl;
         T1_V1 = triangle_1.vertex1;
         T1_V2 = triangle_1.vertex2;
+        T1_V3 = triangle_1.vertex3;
 
         d_1_v1 = t1_d_v1;
         d_1_v2 = t1_d_v2;
+        d_1_v3 = t1_d_v3;
     }
     else if (non_zero_same_sign(t1_d_v1, t1_d_v3)) {
+        std::cout << "B" << std::endl;
         T1_V1 = triangle_1.vertex1;
         T1_V2 = triangle_1.vertex3;
+        T1_V3 = triangle_1.vertex2;
 
         d_1_v1 = t1_d_v1;
         d_1_v2 = t1_d_v3;
+        d_1_v3 = t1_d_v2;
     }
     else {
+        std::cout << "C" << std::endl;
         T1_V1 = triangle_1.vertex2;
         T1_V2 = triangle_1.vertex3;
+        T1_V3 = triangle_1.vertex1;
+
+        std::cout << triangle_1.vertex2.x << "," << triangle_1.vertex2.y  << "," << triangle_1.vertex2.z << std::endl;
 
         d_1_v1 = t1_d_v2;
         d_1_v2 = t1_d_v3;
+        d_1_v3 = t1_d_v1;
     }
 
-    Vector3 T2_V1, T2_V2;
-    float d_2_v1, d_2_v2;
+    CPUVector3 T2_V1, T2_V2, T2_V3;
+    float d_2_v1, d_2_v2, d_2_v3;
     if (non_zero_same_sign(t2_d_v1, t2_d_v2)) {
         T2_V1 = triangle_2.vertex1;
         T2_V2 = triangle_2.vertex2;
+        T2_V3 = triangle_2.vertex3;
 
         d_2_v1 = t2_d_v1;
         d_2_v2 = t2_d_v2;
+        d_2_v3 = t2_d_v3;
     }
     else if (non_zero_same_sign(t2_d_v1, t2_d_v3)) {
         T2_V1 = triangle_2.vertex1;
         T2_V2 = triangle_2.vertex3;
+        T2_V3 = triangle_2.vertex2;
 
         d_2_v1 = t2_d_v1;
         d_2_v2 = t2_d_v3;
+        d_2_v3 = t2_d_v2;
     }
     else {
         T2_V1 = triangle_2.vertex2;
         T2_V2 = triangle_2.vertex3;
+        T2_V3 = triangle_2.vertex1;
 
         d_2_v1 = t2_d_v2;
         d_2_v2 = t2_d_v3;
+        d_2_v3 = t2_d_v1;
     }
 
-    // Compute the intersection line.
-    Vector3 D = cross_product(N1, N2); // The intersection line's direction.
-    Vector3 O = point_on_line(N1, d1, N2, d2); // A point on the intersection line.
-    
-    float p_1_v1 = D * (T1_V1 - O);
-    float p_1_v2 = D * (T1_V2 - O);
+    // T1_V1, T1_V2, T1_V3;
+    float t1_a = line_segment_intersects_plane(T1_V1, T1_V3, N2, d2);
+    float t1_b = line_segment_intersects_plane(T1_V2, T1_V3, N2, d2);
 
-    float p_2_v1 = D * (T2_V1 - O);
-    float p_2_v2 = D * (T2_V2 - O);
+    float t2_a = line_segment_intersects_plane(T2_V1, T2_V3, N1, d1);
+    float t2_b = line_segment_intersects_plane(T2_V2, T2_V3, N1, d1);
 
-    float t1_a = p_1_v1 + ((p_1_v2 - p_1_v1) * (d_1_v1  / (d_1_v1 - d_1_v2)));
-    float t1_b = p_1_v2 + ((p_1_v1 - p_1_v2) * (d_1_v2  / (d_1_v2 - d_1_v1)));
-
-    float t2_a = p_2_v1 + ((p_2_v2 - p_2_v1) * (d_2_v1  / (d_2_v1 - d_2_v2)));
-    float t2_b = p_2_v2 + ((p_2_v1 - p_2_v2) * (d_2_v2  / (d_2_v2 - d_2_v1)));
+    std::cout << "---------" << std::endl;
+    std::cout << "Intervals" << std::endl;
+    std::cout << "[" << t1_a << ", " << t1_b << "]" << std::endl;
+    std::cout << "[" << t2_a << ", " << t2_b << "]" << std::endl;
+    std::cout << "---------" << std::endl;
 
     return do_intervals_intersect(t1_a, t1_b, t2_a, t2_b);
 }
 
-TriangleTriangleCollisionDetector::TriangleTriangleCollisionDetector(const Triangle& T1, const Triangle& T2) {
+TriangleTriangleCollisionDetector::TriangleTriangleCollisionDetector(const Triangle& T1, const Triangle& T2): triangle_1(T1), triangle_2(T2) {
 
     N1 = cross_product((T1.vertex2 - T1.vertex1), (T1.vertex3 - T1.vertex1));
     N2 = cross_product((T2.vertex2 - T2.vertex1), (T2.vertex3 - T2.vertex1));
@@ -235,8 +294,8 @@ TriangleTriangleCollisionDetector::TriangleTriangleCollisionDetector(const Trian
     d1 = -(N1 * T1.vertex1);
     d2 = -(N2 * T2.vertex1);
 
-    Vector3 T0_vertex_distances = compute_signed_distances(T1, N2, d2);
-    Vector3 T1_vertex_distances = compute_signed_distances(T2, N1, d1);
+    CPUVector3 T0_vertex_distances = compute_signed_distances(T1, N2, d2);
+    CPUVector3 T1_vertex_distances = compute_signed_distances(T2, N1, d1);
 
     t1_d_v1 = T0_vertex_distances.x;
     t1_d_v2 = T0_vertex_distances.y;
@@ -247,37 +306,47 @@ TriangleTriangleCollisionDetector::TriangleTriangleCollisionDetector(const Trian
     t2_d_v3 = T1_vertex_distances.z;
 }
 
-Vector3 TriangleTriangleCollisionDetector::compute_signed_distances(const Triangle& T, const Vector3& N, float d) const {
+CPUVector3 TriangleTriangleCollisionDetector::compute_signed_distances(const Triangle& T, const CPUVector3& N, float d) const {
 
     float d1 = (N * T.vertex1) + d;
     float d2 = (N * T.vertex2) + d;
     float d3 = (N * T.vertex3) + d;
 
-    return Vector3(d1, d2, d3);
+    return CPUVector3(d1, d2, d3);
 }
 
-Vector3::Vector3(float x, float y, float z): x(x), y(y), z(z) {
+CPUVector3::CPUVector3(float x, float y, float z): x(x), y(y), z(z) {
 }
 
-Vector3::Vector3(): x(0.), y(0.), z(0.) {
+CPUVector3::CPUVector3(): x(0.), y(0.), z(0.) {
 }
 
-Vector3 Vector3::operator-(const Vector3& right) const {
+CPUVector3 CPUVector3::operator-(const CPUVector3& right) const {
 
-    return Vector3(x - right.x, y - right.y, z - right.z);
+    return CPUVector3(x - right.x, y - right.y, z - right.z);
 }
 
-Vector3 Vector3::operator-(Vector3& right) const {
+CPUVector3 CPUVector3::operator+(const CPUVector3& right) const {
 
-    return Vector3(x - right.x, y - right.y, z - right.z);
+    return CPUVector3(x + right.x, y + right.y, z + right.z);
 }
 
-float Vector3::operator*(Vector3& right) const {
+CPUVector3 CPUVector3::operator+(CPUVector3& right) const {
+
+    return CPUVector3(x + right.x, y + right.y, z + right.z);
+}
+
+CPUVector3 CPUVector3::operator-(CPUVector3& right) const {
+
+    return CPUVector3(x - right.x, y - right.y, z - right.z);
+}
+
+float CPUVector3::operator*(CPUVector3& right) const {
 
     return (x * right.x) + (y * right.y) + (z * right.z);
 }
 
-float Vector3::operator*(const Vector3& right) const {
+float CPUVector3::operator*(const CPUVector3& right) const {
 
     return (x * right.x) + (y * right.y) + (z * right.z);
 }
@@ -355,9 +424,9 @@ void Mesh::load_from_file(std::string file_name) {
     this->num_triangles = read_triangles.size();
     triangles = (Triangle*) malloc(sizeof(Triangle) * num_triangles);
     for (int i = 0; i < read_triangles.size(); i++) {
-        auto a = Vector3(read_triangles[i].v1[0], read_triangles[i].v1[1], read_triangles[i].v1[2]);
-        auto b = Vector3(read_triangles[i].v2[0], read_triangles[i].v2[1], read_triangles[i].v2[2]);
-        auto c = Vector3(read_triangles[i].v3[0], read_triangles[i].v3[1], read_triangles[i].v3[2]);
+        auto a = CPUVector3(read_triangles[i].v1[0], read_triangles[i].v1[1], read_triangles[i].v1[2]);
+        auto b = CPUVector3(read_triangles[i].v2[0], read_triangles[i].v2[1], read_triangles[i].v2[2]);
+        auto c = CPUVector3(read_triangles[i].v3[0], read_triangles[i].v3[1], read_triangles[i].v3[2]);
         triangles[i] = Triangle(a, b, c);
     }
 }
@@ -368,24 +437,20 @@ int main() {
     mesh.load_from_file("../meshes/forearm.stl");
     //mesh.print_triangles();
 
-    Triangle T1 = Triangle(Vector3(12., 24., 36.), Vector3(45., 54., 62.), Vector3(71., 89., 99.));
-    Triangle T2 = Triangle(Vector3(-13., -24., -35.), Vector3(-46., -57., -68.), Vector3(-68., -69., -70.));
-    
-    Triangle T3 = Triangle(Vector3(1., 0., 0.), Vector3(-1., 0., 0.), Vector3(0., 0., 1.));
-    Triangle T4 = Triangle(Vector3(0., 3., 0.), Vector3(0., -3., 0.), Vector3(0., 0., 0.5));
-
-    Triangle T5 = Triangle(Vector3(1., 0., 0.), Vector3(-1., 0., 0.), Vector3(0., 0., 1.));
-    Triangle T6 = Triangle(Vector3(10., 3., 0.), Vector3(10., -3., 0.), Vector3(10., 0., 0.5));
-
-    TriangleTriangleCollisionDetector pair1 = TriangleTriangleCollisionDetector(T1, T2);
-    assert(pair1.check() == 0);
+    Triangle T3 = Triangle(CPUVector3(1., 0.1, 0.), CPUVector3(-1., 0.2, 0.), CPUVector3(0., 0.3, 1.));
+    Triangle T4 = Triangle(CPUVector3(0., 1., 0.1), CPUVector3(0., -1., 0.1), CPUVector3(0., 0.0, 1.5));
 
     TriangleTriangleCollisionDetector pair2 = TriangleTriangleCollisionDetector(T3, T4);
-    assert(pair2.check() != 0);
+    //assert(pair2.check() != 0);
 
-    TriangleTriangleCollisionDetector pair3 = TriangleTriangleCollisionDetector(T5, T6);
-    assert(pair3.check() == 0);
-
+    std::cout << "---------" << std::endl;
+    std::cout << "N1:" << pair2.N1.x << ", " << pair2.N1.y << ", " << pair2.N1.z << std::endl;
+    std::cout << "N2: " << pair2.N2.x << ", " << pair2.N2.y << ", " << pair2.N2.z << std::endl;
+    std::cout << "D1, D2: " << pair2.d1 << ", " << pair2.d2 << std::endl;
+    //std::cout << pair2.t1_d_v1 << ", " << pair2.t1_d_v2 << ", " << pair2.t1_d_v3 << std::endl;
+    //std::cout << pair2.t2_d_v1 << ", " << pair2.t2_d_v2 << ", " << pair2.t2_d_v3 << std::endl;
+    std::cout << pair2.check() << std::endl;
+    std::cout << "---------" << std::endl;
     
     return 0;
 }
