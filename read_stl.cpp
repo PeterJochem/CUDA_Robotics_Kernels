@@ -179,109 +179,63 @@ float line_segment_intersects_plane(CPUVector3 P, CPUVector3 Q, CPUVector3 N, fl
     D = 4.0;
     */
 
-   std::cout << "P and Q" << std::endl;
-   std::cout << P.x << ", " << P.y << ", " << P.z << std::endl;
-   std::cout << Q.x << ", " << Q.y << ", " << Q.z << std::endl;
-   std::cout << "--------" << std::endl;
-
    float numerator = -D + (N.x * P.x) + (N.y * P.y) + (N.z * P.z);
    float denominator = (N.x * (P.x - Q.x)) + (N.y * (P.y - Q.y)) + (N.z * (P.z - Q.z));
-
-   std::cout << numerator << " / " << denominator << std::endl;
    return numerator / denominator;
 }
 
 bool TriangleTriangleCollisionDetector::check(void) {
 
-    // Make sure the data has been populated.
     if (all_zero(t1_d_v1, t1_d_v2, t1_d_v3) || all_zero(t2_d_v1, t2_d_v2, t2_d_v3)) {
         // The triangles are co-planar. Need to add this check.
-        std::cout << "The triangles are coplanar." << std::endl;
+        //std::cout << "The triangles are coplanar." << std::endl;
         return false;
     }
     else if (all_non_zero_same_sign(t1_d_v1, t1_d_v2, t1_d_v3) || all_non_zero_same_sign(t2_d_v1, t2_d_v2, t2_d_v3)) {
-        std::cout << "Collision rules out by all the signed distances having the same signs." << std::endl;
+        //std::cout << "Collision rules out by all the signed distances having the same signs." << std::endl;
         return false;
     }
 
     // Get two vertices from each triangle which lie on the same side.
     CPUVector3 T1_V1, T1_V2, T1_V3;
-    float d_1_v1, d_1_v2, d_1_v3;
     if (non_zero_same_sign(t1_d_v1, t1_d_v2)) {
-        std::cout << "A" << std::endl;
         T1_V1 = triangle_1.vertex1;
         T1_V2 = triangle_1.vertex2;
         T1_V3 = triangle_1.vertex3;
-
-        d_1_v1 = t1_d_v1;
-        d_1_v2 = t1_d_v2;
-        d_1_v3 = t1_d_v3;
     }
     else if (non_zero_same_sign(t1_d_v1, t1_d_v3)) {
-        std::cout << "B" << std::endl;
         T1_V1 = triangle_1.vertex1;
         T1_V2 = triangle_1.vertex3;
         T1_V3 = triangle_1.vertex2;
-
-        d_1_v1 = t1_d_v1;
-        d_1_v2 = t1_d_v3;
-        d_1_v3 = t1_d_v2;
     }
     else {
-        std::cout << "C" << std::endl;
         T1_V1 = triangle_1.vertex2;
         T1_V2 = triangle_1.vertex3;
         T1_V3 = triangle_1.vertex1;
-
-        std::cout << triangle_1.vertex2.x << "," << triangle_1.vertex2.y  << "," << triangle_1.vertex2.z << std::endl;
-
-        d_1_v1 = t1_d_v2;
-        d_1_v2 = t1_d_v3;
-        d_1_v3 = t1_d_v1;
     }
 
     CPUVector3 T2_V1, T2_V2, T2_V3;
-    float d_2_v1, d_2_v2, d_2_v3;
     if (non_zero_same_sign(t2_d_v1, t2_d_v2)) {
         T2_V1 = triangle_2.vertex1;
         T2_V2 = triangle_2.vertex2;
         T2_V3 = triangle_2.vertex3;
-
-        d_2_v1 = t2_d_v1;
-        d_2_v2 = t2_d_v2;
-        d_2_v3 = t2_d_v3;
     }
     else if (non_zero_same_sign(t2_d_v1, t2_d_v3)) {
         T2_V1 = triangle_2.vertex1;
         T2_V2 = triangle_2.vertex3;
         T2_V3 = triangle_2.vertex2;
-
-        d_2_v1 = t2_d_v1;
-        d_2_v2 = t2_d_v3;
-        d_2_v3 = t2_d_v2;
     }
     else {
         T2_V1 = triangle_2.vertex2;
         T2_V2 = triangle_2.vertex3;
         T2_V3 = triangle_2.vertex1;
-
-        d_2_v1 = t2_d_v2;
-        d_2_v2 = t2_d_v3;
-        d_2_v3 = t2_d_v1;
     }
 
-    // T1_V1, T1_V2, T1_V3;
     float t1_a = line_segment_intersects_plane(T1_V1, T1_V3, N2, d2);
     float t1_b = line_segment_intersects_plane(T1_V2, T1_V3, N2, d2);
 
     float t2_a = line_segment_intersects_plane(T2_V1, T2_V3, N1, d1);
     float t2_b = line_segment_intersects_plane(T2_V2, T2_V3, N1, d1);
-
-    std::cout << "---------" << std::endl;
-    std::cout << "Intervals" << std::endl;
-    std::cout << "[" << t1_a << ", " << t1_b << "]" << std::endl;
-    std::cout << "[" << t2_a << ", " << t2_b << "]" << std::endl;
-    std::cout << "---------" << std::endl;
 
     return do_intervals_intersect(t1_a, t1_b, t2_a, t2_b);
 }
@@ -424,33 +378,73 @@ void Mesh::load_from_file(std::string file_name) {
     this->num_triangles = read_triangles.size();
     triangles = (Triangle*) malloc(sizeof(Triangle) * num_triangles);
     for (int i = 0; i < read_triangles.size(); i++) {
-        auto a = CPUVector3(read_triangles[i].v1[0], read_triangles[i].v1[1], read_triangles[i].v1[2]);
-        auto b = CPUVector3(read_triangles[i].v2[0], read_triangles[i].v2[1], read_triangles[i].v2[2]);
-        auto c = CPUVector3(read_triangles[i].v3[0], read_triangles[i].v3[1], read_triangles[i].v3[2]);
-        triangles[i] = Triangle(a, b, c);
+        auto v1 = CPUVector3(read_triangles[i].v1[0], read_triangles[i].v1[1], read_triangles[i].v1[2]);
+        auto v2 = CPUVector3(read_triangles[i].v2[0], read_triangles[i].v2[1], read_triangles[i].v2[2]);
+        auto v3 = CPUVector3(read_triangles[i].v3[0], read_triangles[i].v3[1], read_triangles[i].v3[2]);
+        triangles[i] = Triangle(v1, v2, v3);
     }
 }
 
-int main() {
-    
-    Mesh mesh = Mesh();
-    mesh.load_from_file("../meshes/forearm.stl");
-    //mesh.print_triangles();
+void test_one() {
+
+    Triangle T1 = Triangle(CPUVector3(1., 0.1, 0.), CPUVector3(0., 0.2, 0.), CPUVector3(0., 0.3, 1.));
+    Triangle T2 = Triangle(CPUVector3(-10., -10., -10.1), CPUVector3(-200., -100., -100.1), CPUVector3(-330., -12.0, -1.5));
+    TriangleTriangleCollisionDetector pair1 = TriangleTriangleCollisionDetector(T1, T2);
 
     Triangle T3 = Triangle(CPUVector3(1., 0.1, 0.), CPUVector3(-1., 0.2, 0.), CPUVector3(0., 0.3, 1.));
     Triangle T4 = Triangle(CPUVector3(0., 1., 0.1), CPUVector3(0., -1., 0.1), CPUVector3(0., 0.0, 1.5));
-
     TriangleTriangleCollisionDetector pair2 = TriangleTriangleCollisionDetector(T3, T4);
-    //assert(pair2.check() != 0);
 
-    std::cout << "---------" << std::endl;
-    std::cout << "N1:" << pair2.N1.x << ", " << pair2.N1.y << ", " << pair2.N1.z << std::endl;
-    std::cout << "N2: " << pair2.N2.x << ", " << pair2.N2.y << ", " << pair2.N2.z << std::endl;
-    std::cout << "D1, D2: " << pair2.d1 << ", " << pair2.d2 << std::endl;
-    //std::cout << pair2.t1_d_v1 << ", " << pair2.t1_d_v2 << ", " << pair2.t1_d_v3 << std::endl;
-    //std::cout << pair2.t2_d_v1 << ", " << pair2.t2_d_v2 << ", " << pair2.t2_d_v3 << std::endl;
-    std::cout << pair2.check() << std::endl;
-    std::cout << "---------" << std::endl;
-    
+    assert(pair1.check() == 0);
+    assert(pair2.check() != 0);
+}
+
+int check_meshes_for_collision(const Mesh& mesh1, const Mesh& mesh2) {
+
+    int num_collisions = 0;
+    for (int i = 0; i < mesh1.num_triangles; i++) {
+        auto mesh_1_triangle = mesh1.triangles[i];
+
+        for (int j = 0; j < mesh2.num_triangles; j++) {
+            auto mesh_2_triangle = mesh2.triangles[j];
+            mesh_2_triangle.vertex1.x += 10000;
+            mesh_2_triangle.vertex1.y += 10000;
+            mesh_2_triangle.vertex1.z += 10000;
+
+            mesh_2_triangle.vertex2.x += 20000;
+            mesh_2_triangle.vertex2.y += 20000;
+            mesh_2_triangle.vertex2.z += 20000;
+
+            mesh_2_triangle.vertex3.x += 30000;
+            mesh_2_triangle.vertex3.y += 30000;
+            mesh_2_triangle.vertex3.z += 30000;
+            TriangleTriangleCollisionDetector detector = TriangleTriangleCollisionDetector(mesh_1_triangle, mesh_2_triangle);
+            if (detector.check()) {
+                num_collisions += 1;
+            }
+        }
+    }
+
+    return num_collisions;
+}
+
+void mesh_test() {
+
+    Mesh fore_arm = Mesh();
+    fore_arm.load_from_file("../meshes/forearm.stl");
+
+    Mesh upper_arm = Mesh();
+    upper_arm.load_from_file("../meshes/upperarm.stl");
+
+    int num_collisions = check_meshes_for_collision(fore_arm, upper_arm);
+
+    std::cout << "The number of collisions: " << num_collisions << std::endl;
+}
+
+
+int main() {
+
+    mesh_test();
+
     return 0;
 }
