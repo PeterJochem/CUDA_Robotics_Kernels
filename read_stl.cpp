@@ -411,8 +411,8 @@ void mesh_test() {
 
 int main() {
 
-    //mesh_test();
-    test_one();
+    mesh_test();
+    //test_one();
 
     return 0;
 }
